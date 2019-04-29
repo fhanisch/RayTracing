@@ -8,17 +8,27 @@
 #include <string.h>
 #include <math.h>
 
+#undef min
 #undef max
 
-#define WIDTH 1500
+#define WIDTH 2000
 #define HEIGHT 1500
 
 #define PI 3.141592653589793
 
 struct sphere {
+	double r;
 	double pos[3];
 	double color[3];
 };
+
+double min(double a, double b)
+{
+	if (a < b)
+		return a;
+	else
+		return b;
+}
 
 double max(double a, double b)
 {
@@ -41,13 +51,13 @@ void normalize(double n[3], double v[3])
 	n[2] = v[2] / r;
 }
 
-double calcDiscriminant(double origin[3], double sphere[3], double dir[3])
+double calcDiscriminant(double origin[3], double sphere[3], double dir[3], double r)
 {
 	double u[3];
 	u[0] = origin[0] - sphere[0];
 	u[1] = origin[1] - sphere[1];
 	u[2] = origin[2] - sphere[2];
-	return dot(u, dir)* dot(u, dir) - (dot(u, u) - 1.0);
+	return dot(u, dir)* dot(u, dir) - (dot(u, u) - r*r);
 }
 
 double calcSpereIntersection(double origin[3], double sphere[3], double dir[3], double discriminant)
@@ -58,7 +68,7 @@ double calcSpereIntersection(double origin[3], double sphere[3], double dir[3], 
 	u[2] = origin[2] - sphere[2];
 	double t1 = -dot(u, dir) + sqrt(discriminant);
 	double t2 = -dot(u, dir) - sqrt(discriminant);
-	return t1;
+	return max(min(t1, t2), 0);
 }
 
 
@@ -66,7 +76,7 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 {
 	double r=0.0, g=0.0, b=0.0;
 	double origin[] = { 0.0, 0.0, 0.0 };
-	double lightSource[] = { -100.0, 0.0, -6.0 };
+	double lightSource[] = { -50.0, 0.0, -100.0 };
 	double tmp[3];
 	double dir[3];
 	double t = 12000.0;
@@ -78,9 +88,9 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 	{
 		for (unsigned int j = 0; j < WIDTH; j++)
 		{
-			double x = (2.0 * (double)j / (double)WIDTH - 1.0) * 0.2;
+			double x = (2.0 * (double)j / (double)WIDTH - 1.0) * 0.2 * WIDTH/HEIGHT;
 			double y = -(2.0 * (double)i / (double)HEIGHT - 1.0) * 0.2;
-			double z = -0.5;
+			double z = 0.5;
 			double t0 = 10000;
 			tmp[0] = x;
 			tmp[1] = y;
@@ -89,11 +99,12 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 			t = 12000;
 			for (unsigned int k = 0; k < numSpheres; k++)
 			{
-				double discr = calcDiscriminant(origin, s[k].pos, dir);
+				double discr = calcDiscriminant(origin, s[k].pos, dir, s[k].r);
 				if (discr >= 0.0)
 				{
 					t0 = calcSpereIntersection(origin, s[k].pos, dir, discr);
 					if (t < t0) continue;
+					t = t0;
 					//printf("t0 = %f\n", t0);
 					P_hit[0] = t0 * dir[0];
 					P_hit[1] = t0 * dir[1];
@@ -105,12 +116,25 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 					tmp[0] = lightSource[0] - P_hit[0];
 					tmp[1] = lightSource[1] - P_hit[1];
 					tmp[2] = lightSource[2] - P_hit[2];
-					normalize(lightDir, tmp);
-					diffuseIntensity = max(dot(lightDir, normalSphere), 0.0);
-					r = s[k].color[0] * diffuseIntensity;
-					g = s[k].color[1] * diffuseIntensity;
-					b = s[k].color[2] * diffuseIntensity;
-					t = t0;
+					normalize(lightDir, tmp);					
+					diffuseIntensity = max(dot(lightDir, normalSphere), 0.2);
+					for (unsigned int l = 0; l < numSpheres; l++)
+					{
+						discr = calcDiscriminant(P_hit, s[l].pos, lightDir, s[l].r);
+						if (discr >= 0 && k != l && calcSpereIntersection(P_hit, s[l].pos, lightDir, discr) >0 )
+						{
+							r = s[k].color[0] * 0.2;
+							g = s[k].color[1] * 0.2;
+							b = s[k].color[2] * 0.2;
+							break;
+						}
+						else
+						{
+							r = s[k].color[0] * diffuseIntensity;
+							g = s[k].color[1] * diffuseIntensity;
+							b = s[k].color[2] * diffuseIntensity;
+						}
+					}
 				}
 			}
 			if (t >= 12000)
@@ -133,7 +157,7 @@ int writeFile(const char* filename, char* pixels, size_t pixelSize)
 {
 	FILE* file;
 	const char* magic = "P6\n";
-	const char* width = "1500\n";
+	const char* width = "2000\n";
 	const char* height = "1500\n";
 	const char* hellikeit = "255\n";
 
@@ -161,14 +185,16 @@ int main(int argc, char* argv[])
 	char* pixels = calloc(1, pixelSize);
 	memset(pixels, 255, pixelSize);
 
-	struct sphere s1 = { { -1.0, 0.0, -6.0 }, { 0.0, 1.0, 0.0} };
-	struct sphere s2 = { { 1.0,  0.0, -6.0 }, { 1.0, 0.0, 0.0} };
+	struct sphere s1 = { 0.5, { -1.0, 0.0, 4.0 }, { 0.0, 1.0, 0.0} };
+	struct sphere s2 = { 1.0, { -0.5, -0.5, 6.0 }, { 1.0, 0.0, 0.0} };
+	struct sphere s3 = { 4.0, { 1.0,  0.0, 12.0 }, { 1.0, 1.0, 0.0} };
 
-	struct sphere s[2];
+	struct sphere s[3];
 	s[0] = s1;
 	s[1] = s2;
+	s[2] = s3;
 
-	render(pixels, 2, s);
+	render(pixels, 3, s);
 	writeFile(argv[1], pixels, pixelSize);
 
 	return 0;

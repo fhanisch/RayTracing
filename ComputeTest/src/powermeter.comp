@@ -1,0 +1,56 @@
+#version 450
+
+#define WIDTH 2400
+#define HEIGHT 2400
+#define WORKGROUP_SIZE 32
+
+#define PI 3.141592653589793
+
+layout (local_size_x = WORKGROUP_SIZE, local_size_y = WORKGROUP_SIZE, local_size_z = 1 ) in;
+
+struct Pixel{
+	vec4 value;
+};
+
+layout(std140, binding = 0) buffer buf
+{
+	Pixel imageData[];
+};
+
+void main() {
+
+	if(gl_GlobalInvocationID.x >= WIDTH || gl_GlobalInvocationID.y >= HEIGHT) return;
+
+	float x = 2.0 * float(gl_GlobalInvocationID.x) / float(WIDTH) - 1.0;
+	float y = 2.0 * float(gl_GlobalInvocationID.y) / float(HEIGHT) - 1.0;
+	float r, g, b;
+	float R = sqrt(pow(x, 2.0) + pow(y, 2.0));
+	float phi = asin(y / R);
+
+	if (R <= 0.75 && R >= 0.2)
+	{
+		r = 0.0;
+		g = 0.0;
+		b = 1.0 - R;
+	}
+	else if (R > 0.75 && R <= 1.0 && phi >= -PI / 4.0 && phi <= PI / 2.0 && x <= 0.0)
+	{
+		r = (phi + PI / 2.0) / PI;
+		g = 1.0;
+		b = 0.0;
+	}
+	else if (R > 0.75 && R <= 1.0 && phi >= -PI / 4.0 && phi <= PI / 2.0 && x >= 0.0)
+	{
+		r = 1.0;
+		g = (phi + PI / 2.0) / PI;
+		b = 0.0;
+	}
+	else
+	{
+		r = 0.2;
+		g = 0.2;
+		b = 0.2;
+	}
+          
+	imageData[WIDTH * gl_GlobalInvocationID.y + gl_GlobalInvocationID.x].value = vec4(r,g,b,1.0);
+}

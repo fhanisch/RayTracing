@@ -7,7 +7,7 @@ class Vulkan
 	const char* engineName;
 	uint32_t imgWidth;
 	uint32_t imgHeight;
-	uint32_t WORKGROUP_SIZE = 32;
+	uint32_t WORKGROUP_SIZE = 16;
 	uint32_t apiVersion;
 	uint32_t queueFamilyIndex;
 	VkInstance instance = VK_NULL_HANDLE;

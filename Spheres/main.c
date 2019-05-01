@@ -57,7 +57,7 @@ double calcDiscriminant(double origin[3], double sphere[3], double dir[3], doubl
 	u[0] = origin[0] - sphere[0];
 	u[1] = origin[1] - sphere[1];
 	u[2] = origin[2] - sphere[2];
-	return dot(u, dir)* dot(u, dir) - (dot(u, u) - r*r);
+	return 4.0*dot(u, dir)* dot(u, dir) - 4.0*(dot(u, u) - r*r);
 }
 
 double calcSpereIntersection(double origin[3], double sphere[3], double dir[3], double discriminant)
@@ -66,9 +66,9 @@ double calcSpereIntersection(double origin[3], double sphere[3], double dir[3], 
 	u[0] = origin[0] - sphere[0];
 	u[1] = origin[1] - sphere[1];
 	u[2] = origin[2] - sphere[2];
-	double t1 = -dot(u, dir) + sqrt(discriminant);
-	double t2 = -dot(u, dir) - sqrt(discriminant);
-	return max(min(t1, t2), 0);
+	
+	double t = (-2.0*dot(u, dir) - sqrt(discriminant))/2.0;
+	return max(t, 0);
 }
 
 

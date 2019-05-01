@@ -1,8 +1,8 @@
 #version 450
 
-#define WIDTH 2400
-#define HEIGHT 2400
-#define WORKGROUP_SIZE 32
+#define WIDTH 2160
+#define HEIGHT 2160
+#define WORKGROUP_SIZE 16
 
 #define PI 3.141592653589793
 
@@ -22,7 +22,7 @@ void main() {
 	if(gl_GlobalInvocationID.x >= WIDTH || gl_GlobalInvocationID.y >= HEIGHT) return;
 
 	float x = 2.0 * float(gl_GlobalInvocationID.x) / float(WIDTH) - 1.0;
-	float y = 2.0 * float(gl_GlobalInvocationID.y) / float(HEIGHT) - 1.0;
+	float y = -(2.0 * float(gl_GlobalInvocationID.y) / float(HEIGHT) - 1.0);
 	float r, g, b;
 	float R = sqrt(pow(x, 2.0) + pow(y, 2.0));
 	float phi = asin(y / R);

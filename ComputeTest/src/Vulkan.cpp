@@ -20,11 +20,11 @@ Vulkan::Vulkan(const char* _appName, const char* _engineName, uint32_t _imgWidth
 	createBuffer();
 	createDescriptorSetLayout();
 	createDescriptorSet();
-	loadComputeShader("C:/Home/Entwicklung/RayTracing/x64/Debug/mandelbrot.spv");
+	loadComputeShader("C:/Home/Entwicklung/RayTracing/x64/Debug/powermeter.spv");
 	createComputePipeline();
 	createCommandBuffer();
 	submitCommandBuffer();
-	saveImage("mandel.ppm");
+	saveImage("powermeter.ppm");
 }
 
 Vulkan::~Vulkan()
@@ -394,8 +394,8 @@ int Vulkan::saveImage(const char* filename)
 {
 	FILE* file;
 	const char* magic = "P6\n";
-	const char* width = "3200\n";
-	const char* height = "2400\n";
+	const char* width = "2160\n";
+	const char* height = "2160\n";
 	const char* hellikeit = "255\n";
 	float* data;
 	size_t pixelSize = 3 * imgWidth * imgHeight;

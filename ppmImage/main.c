@@ -8,8 +8,8 @@
 #include <string.h>
 #include <math.h>
 
-#define WIDTH 1500
-#define HEIGHT 1500
+#define WIDTH 2160
+#define HEIGHT 2160
 
 #define PI 3.141592653589793
 
@@ -65,8 +65,8 @@ int writeFile(const char* filename, char* pixels, size_t pixelSize)
 {
 	FILE* file;
 	const char* magic = "P6\n";
-	const char* width = "1500\n";
-	const char* height = "1500\n";
+	const char* width = "2160\n";
+	const char* height = "2160\n";
 	const char* hellikeit = "255\n";
 
 	file = fopen(filename, "wb");

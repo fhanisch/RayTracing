@@ -7,3 +7,4 @@ prog1:
 shader:
 	glslangValidator -V ComputeTest\src\mandelbrot.comp -o x64\Debug\mandelbrot.spv
 	glslangValidator -V ComputeTest\src\powermeter.comp -o x64\Debug\powermeter.spv
+	glslangValidator -V ComputeTest\src\spheres.comp -o x64\Debug\spheres.spv

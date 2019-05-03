@@ -51,30 +51,27 @@ void normalize(double n[3], double v[3])
 	n[2] = v[2] / r;
 }
 
-double calcDiscriminant(double origin[3], double sphere[3], double dir[3], double r)
+double calcSpereIntersection(double o[3], double d[3], double pos[3], double r)
 {
-	double u[3];
-	u[0] = origin[0] - sphere[0];
-	u[1] = origin[1] - sphere[1];
-	u[2] = origin[2] - sphere[2];
-	return 4.0*dot(u, dir)* dot(u, dir) - 4.0*(dot(u, u) - r*r);
-}
+	double oc[3];
 
-double calcSpereIntersection(double origin[3], double sphere[3], double dir[3], double discriminant)
-{
-	double u[3];
-	u[0] = origin[0] - sphere[0];
-	u[1] = origin[1] - sphere[1];
-	u[2] = origin[2] - sphere[2];
+	oc[0] = o[0] - pos[0];
+	oc[1] = o[1] - pos[1];
+	oc[2] = o[2] - pos[2];
 	
-	double t = (-2.0*dot(u, dir) - sqrt(discriminant))/2.0;
+	double b = 2 * dot(d, oc);
+	double c = dot(oc, oc) - r*r;
+	double h = b * b - 4 * c;
+
+	if (h < 0.0) return -1;
+
+	double t = (-b - sqrt(h)) / 2.0;
 	return max(t, 0);
 }
 
 
 int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 {
-	double r=0.0, g=0.0, b=0.0;
 	double origin[] = { 0.0, 0.0, 0.0 };
 	double lightSource[] = { -50.0, 0.0, -100.0 };
 	double tmp[3];
@@ -88,10 +85,10 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 	{
 		for (unsigned int j = 0; j < WIDTH; j++)
 		{
+			double r = 0.0, g = 0.0, b = 0.0;
 			double x = (2.0 * (double)j / (double)WIDTH - 1.0) * 0.2 * WIDTH/HEIGHT;
 			double y = -(2.0 * (double)i / (double)HEIGHT - 1.0) * 0.2;
 			double z = 0.5;
-			double t0 = 10000;
 			tmp[0] = x;
 			tmp[1] = y;
 			tmp[2] = z;
@@ -99,11 +96,9 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 			t = 12000;
 			for (unsigned int k = 0; k < numSpheres; k++)
 			{
-				double discr = calcDiscriminant(origin, s[k].pos, dir, s[k].r);
-				if (discr >= 0.0)
+				double t0 = calcSpereIntersection(origin, dir, s[k].pos, s[k].r);
+				if ( t0 > 0.0 && t0 < t)
 				{
-					t0 = calcSpereIntersection(origin, s[k].pos, dir, discr);
-					if (t < t0) continue;
 					t = t0;
 					//printf("t0 = %f\n", t0);
 					P_hit[0] = t0 * dir[0];
@@ -120,8 +115,8 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 					diffuseIntensity = max(dot(lightDir, normalSphere), 0.2);
 					for (unsigned int l = 0; l < numSpheres; l++)
 					{
-						discr = calcDiscriminant(P_hit, s[l].pos, lightDir, s[l].r);
-						if (discr >= 0 && k != l && calcSpereIntersection(P_hit, s[l].pos, lightDir, discr) >0 )
+						t0 = calcSpereIntersection(P_hit, lightDir, s[l].pos, s[l].r);
+						if (t0 > 0.0 && k != l)
 						{
 							r = s[k].color[0] * 0.2;
 							g = s[k].color[1] * 0.2;
@@ -136,12 +131,6 @@ int render(char* pixels, unsigned int numSpheres, struct sphere* s)
 						}
 					}
 				}
-			}
-			if (t >= 12000)
-			{
-				r = 0.0;
-				g = 0.0;
-				b = 0.0;
 			}
 			pixels[0] = (char)(r * 255.0);
 			pixels[1] = (char)(g * 255.0);

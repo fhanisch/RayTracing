@@ -3,7 +3,7 @@
 
 #define APP_NAME "Compute Test"
 #define ENGINE_NAME "MyVulkanEngine"
-#define IMG_WIDTH 2160
+#define IMG_WIDTH 3840
 #define IMG_HEIGHT 2160
 
 class App

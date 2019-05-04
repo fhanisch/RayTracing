@@ -18,16 +18,23 @@ struct Sphere {
 	vec3 color;
 };
 
+struct Plane {
+	// Hessesche Normalform
+	vec3 n0;
+	float d;
+	vec3 color;
+};
+
 layout(std140, binding = 0) buffer buf
 {
 	Pixel imageData[];
 };
 
-float calcSpereIntersection(vec3 o, vec3 d, vec3 pos, float r)
+float calcSpereIntersection(vec3 o, vec3 d, Sphere sphere)
 {
-	vec3 oc = o - pos;
+	vec3 oc = o - sphere.pos;
 	float b = 2.0 * dot(d, oc);
-	float c = dot(oc, oc) - r*r;
+	float c = dot(oc, oc) - sphere.r * sphere.r;
 	float h = b*b - 4.0 * c;
 
 	if (h < 0.0) return -1.0;
@@ -36,20 +43,43 @@ float calcSpereIntersection(vec3 o, vec3 d, vec3 pos, float r)
 	return max(t, 0.0);
 }
 
-vec3 calcADS(vec3 c, vec3 lightDir, vec3 normalSphere, vec3 origin)
+float planeIntersection(vec3 o, vec3 d, Plane plane)
 {
-	vec3 A = 0.2*c;
+	float nenner = dot(d, plane.n0);
+	if (nenner == 0.0) return -1.0;
+
+	float t = -(plane.d + dot(o, plane.n0)) / nenner;
+
+	return max(t, 0.0);
+}
+
+vec3 calcADS(vec3 c, vec3 lightDir, vec3 normal, vec3 origin)
+{
+	vec3 A = 0.1*c;
 	vec3 D = c;
 	vec3 S = vec3(0.0);
 
 	vec3 v = normalize(-origin);
-	vec3 r = reflect(-lightDir,normalSphere);
+	vec3 r = reflect(-lightDir, normal);
 
-	float diffuseIntensity = max(dot(lightDir, normalSphere), 0.0);
+	float diffuseIntensity = max(dot(lightDir, normal), 0.0);
 	if( diffuseIntensity > 0.0 )
-		S = vec3(1.0,1.0,0.6) * pow( max( dot(r,v), 0.0 ), 10.0 );
+		S = vec3(1.0,1.0,0.6) * pow( max( dot(r,v), 0.0 ), 100.0 );
 
 	return min(A + diffuseIntensity*D + S, 1.0);
+}
+
+float muster(vec3 x, vec3 center)
+{
+	const float s = 10.0;
+	vec3 p = normalize(x-center);
+	float u = (atan(p[2]/p[0]) / (PI/2.0) + 1) * 0.5;
+	float v = acos(p[1]) / PI;
+
+	if ( (mod(floor(s*v),2.0)==1 && mod(floor(s*u),2.0)==1) || (mod(floor(s*v),2.0)==0 && mod(floor(s*u),2.0)==0) )
+		return 1.0;
+	else
+		return 0.5;
 }
 
 void main() {
@@ -60,7 +90,10 @@ void main() {
 	spheres[0] = Sphere(vec3(-1.0, 0.0, 3.0), 0.5, vec3(1.0, 0.0, 0.0));
 	spheres[1] = Sphere(vec3(-0.5, -0.5, 6.0), 1.0, vec3(0.0, 1.0, 0.0));
 	spheres[2] = Sphere(vec3(1.5,  0.0, 12.0), 4.0, vec3(1.0, 1.0, 0.0));
-	vec3 lightSource = vec3( -60.0, 0.0, -100.0 );
+	//Plane plane = Plane(vec3(0.0, 0.0, -1.0), 18.0, vec3(0.0, 0.0, 1.0));
+	Plane plane = Plane(vec3(0.0, 1.0, 0.0), 4.0, vec3(0.0, 0.0, 1.0));
+	//vec3 lightSource = vec3( -60.0, 0.0, -100.0 );
+	vec3 lightSource = vec3( -1000.0, 1000.0, -1000.0 );
 
 	float x = 0.2 * (2.0 * float(gl_GlobalInvocationID.x) / float(WIDTH) - 1.0) * float(WIDTH)/float(HEIGHT);
 	float y = -0.2 * (2.0 * float(gl_GlobalInvocationID.y) / float(HEIGHT) - 1.0);
@@ -69,33 +102,54 @@ void main() {
 	vec3 dir = normalize(vec3(x,y,z));
 	vec3 color = vec3(0.0);
 	float t = 12000.0;
+	float f;
 
 	for (uint i = 0; i < spheres.length(); i++)
 	{
-		float t0 = calcSpereIntersection(origin, dir, spheres[i].pos, spheres[i].r);
+		float t0 = calcSpereIntersection(origin, dir, spheres[i]);
 		if ( t0 > 0.0 && t0 < t)
 		{
 			t = t0;
-			color = vec3(0.0, 1.0, 0.0);
 			vec3 p_hit = origin + t0 * dir;
 			vec3 normalSphere = normalize(p_hit - spheres[i].pos);
 			vec3 lightDir = normalize(lightSource - p_hit);
+
+			f = muster(p_hit, spheres[i].pos);
 			
 			for (uint j = 0; j < spheres.length(); j++)
 			{
-				t0 = calcSpereIntersection(p_hit, lightDir, spheres[j].pos, spheres[j].r);
+				t0 = calcSpereIntersection(p_hit, lightDir, spheres[j]);
 				if (t0 > 0.0 && i != j)
 				{
-					color = spheres[i].color*0.2;
+					color = spheres[i].color*0.1*f;
 					break;
 				}
 				else
 				{
-					//color = spheres[i].color*diffuseIntensity;
-					color = calcADS(spheres[i].color, lightDir, normalSphere, p_hit);
+					color = calcADS(spheres[i].color, lightDir, normalSphere, p_hit)*f;
 				}
 			}
 		}
+	}
+	float t0 = planeIntersection(origin, dir, plane);
+	if ( t0 > 0.0 && t0 < t)
+	{
+		t = t0;
+		vec3 p_hit = origin + t0 * dir;
+		vec3 lightDir = normalize(lightSource - p_hit);
+		for (uint j = 0; j < spheres.length(); j++)
+			{
+				t0 = calcSpereIntersection(p_hit, lightDir, spheres[j]);
+				if (t0 > 0.0)
+				{
+					color = plane.color*0.2;
+					break;
+				}
+				else
+				{
+					color = calcADS(plane.color, lightDir, plane.n0, p_hit);
+				}
+			}
 	}
           
 	imageData[WIDTH * gl_GlobalInvocationID.y + gl_GlobalInvocationID.x].value = vec4(color ,1.0);

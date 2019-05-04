@@ -23,8 +23,6 @@ Vulkan::Vulkan(const char* _appName, const char* _engineName, uint32_t _imgWidth
 	loadComputeShader("C:/Home/Entwicklung/RayTracing/x64/Debug/spheres.spv");
 	createComputePipeline();
 	createCommandBuffer();
-	submitCommandBuffer();
-	saveImage("Kugeln.ppm");
 }
 
 Vulkan::~Vulkan()
@@ -390,39 +388,20 @@ void Vulkan::submitCommandBuffer()
 	vkDestroyFence(device, fence, NULL);
 }
 
-int Vulkan::saveImage(const char* filename)
+void Vulkan::getPixelBuffer(char* pixels)
 {
-	FILE* file;
-	const char* magic = "P6\n";
-	const char* width = "3840\n";
-	const char* height = "2160\n";
-	const char* hellikeit = "255\n";
 	float* data;
-	size_t pixelSize = 3 * imgWidth * imgHeight;
-	char* pixels = (char*)calloc(1, pixelSize);
-	char* pixelData = pixels;
-	memset(pixels, 255, pixelSize);
-	
-	vkMapMemory(device, bufferMemory, 0, bufferSize, 0, (void**)&data);
+
+	vkMapMemory(device, bufferMemory, 0, bufferSize, 0, (void**)& data);
 	{
 		for (unsigned int i = 0; i < imgWidth * imgHeight; i++)
 		{
-			pixels[0] = (char)(data[0]*255);
-			pixels[1] = (char)(data[1]*255);
-			pixels[2] = (char)(data[2]*255);
+			pixels[0] = (char)(data[0] * 255);
+			pixels[1] = (char)(data[1] * 255);
+			pixels[2] = (char)(data[2] * 255);
 			pixels += 3;
 			data += 4;
 		}
 	}
 	vkUnmapMemory(device, bufferMemory);
-	
-	file = fopen(filename, "wb");
-	fwrite(magic, strlen(magic), 1, file);
-	fwrite(width, strlen(width), 1, file);
-	fwrite(height, strlen(height), 1, file);
-	fwrite(hellikeit, strlen(hellikeit), 1, file);
-	fwrite(pixelData, pixelSize, 1, file);
-	fclose(file);
-
-	return 0;
 }

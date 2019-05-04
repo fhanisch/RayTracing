@@ -39,9 +39,9 @@ class Vulkan
 	void loadComputeShader(const char* fileName);
 	void createComputePipeline();
 	void createCommandBuffer();
-	void submitCommandBuffer();
-	int saveImage(const char* filename);
 public:
 	Vulkan(const char* _appName, const char* _engineName, uint32_t _imgWidth, uint32_t _imgHeight);
 	~Vulkan();
+	void submitCommandBuffer();
+	void getPixelBuffer(char* pixels);
 };

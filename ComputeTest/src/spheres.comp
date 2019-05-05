@@ -101,9 +101,9 @@ void main() {
 	if(gl_GlobalInvocationID.x >= WIDTH || gl_GlobalInvocationID.y >= HEIGHT) return;
 
 	Sphere spheres[3];
-	spheres[0] = Sphere(vec3(-1.0, 0.0, 3.0), 0.5, vec3(1.0, 0.0, 0.0));
-	spheres[1] = Sphere(vec3(-0.5, -0.5, 6.0), 1.0, vec3(0.0, 1.0, 0.0));
-	spheres[2] = Sphere(vec3(1.5,  0.0, 12.0), 4.0, vec3(1.0, 1.0, 0.0));
+	spheres[0] = Sphere(vec3(-1.0, 0.0, 3.0+5.0), 0.5, vec3(1.0, 0.0, 0.0));
+	spheres[1] = Sphere(vec3(-7.0, -2.0, 8.0 + 10.0), 1.0, vec3(0.0, 1.0, 0.0));
+	spheres[2] = Sphere(vec3(1.5,  0.0, 12.0+10.0), 4.0, vec3(1.0, 1.0, 0.0));
 	//Plane plane = Plane(vec3(0.0, 0.0, -1.0), 18.0, vec3(0.0, 0.0, 1.0));
 	Plane plane = Plane(vec3(0.0, -4.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 1.0));
 	//vec3 lightSource = vec3( -60.0, 0.0, -100.0 );
@@ -127,20 +127,14 @@ void main() {
 			vec3 p_hit = origin + t0 * dir;
 			vec3 normalSphere = normalize(p_hit - spheres[i].pos);
 			vec3 lightDir = normalize(lightSource - p_hit);
-
 			f = muster(p_hit, spheres[i].pos);
-			
+			color = calcADS(spheres[i].color*f, lightDir, normalSphere, p_hit);
 			for (uint j = 0; j < spheres.length(); j++)
 			{
 				t0 = calcSpereIntersection(p_hit, lightDir, spheres[j]);
 				if (t0 > 0.0 && i != j)
 				{
-					color = spheres[i].color*0.1*f;
-					break;
-				}
-				else
-				{
-					color = calcADS(spheres[i].color, lightDir, normalSphere, p_hit)*f;
+					color = color*0.5;
 				}
 			}
 		}
@@ -151,20 +145,25 @@ void main() {
 		t = t0;
 		vec3 p_hit = origin + t0 * dir;
 		vec3 lightDir = normalize(lightSource - p_hit);
+		vec3 reflectDir = reflect(normalize(p_hit), plane.n);
 		f = muster2(p_hit, plane);
+		color = calcADS(plane.color*f, lightDir, plane.n, p_hit);
 		for (uint j = 0; j < spheres.length(); j++)
+		{
+			t0 = calcSpereIntersection(p_hit, reflectDir, spheres[j]);
+			if (t0 > 0.0)
 			{
-				t0 = calcSpereIntersection(p_hit, lightDir, spheres[j]);
-				if (t0 > 0.0)
-				{
-					color = plane.color*0.2*f;
-					break;
-				}
-				else
-				{
-					color = calcADS(plane.color, lightDir, plane.n, p_hit)*f;
-				}
+				f = muster(p_hit+t0*reflectDir, spheres[j].pos);
+				vec3 normalSphere = normalize((p_hit+t0*reflectDir) - spheres[j].pos);
+				vec3 lightDir = normalize(lightSource - (p_hit+t0*reflectDir));
+				color = mix(color, calcADS(spheres[j].color*f, lightDir, normalSphere, (p_hit+t0*reflectDir)), 0.1);
 			}
+			t0 = calcSpereIntersection(p_hit, lightDir, spheres[j]);
+			if (t0 > 0.0)
+			{
+				color = color*0.5;
+			}
+		}
 	}
           
 	imageData[WIDTH * gl_GlobalInvocationID.y + gl_GlobalInvocationID.x].value = vec4(color ,1.0);

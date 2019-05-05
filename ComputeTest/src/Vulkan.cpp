@@ -162,7 +162,7 @@ void Vulkan::choosePhysicalDevice()
 	VkPhysicalDevice* devices = new VkPhysicalDevice[deviceCount];
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices);
 	
-	physicalDevice = devices[1];
+	physicalDevice = devices[0];
 
 	if (physicalDevice == VK_NULL_HANDLE) {
 		std::cout << "Failed to find a suitable GPU!" << std::endl;
